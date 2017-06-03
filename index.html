@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <script src="js/cytoscape.js"></script>
+</head>
+
+<style>
+    #cy {
+        width: 100vh;
+        height: 100vh;
+        margin: auto;
+    }
+</style>
+<body>
+<div id="cy"></div>
+<script>
+    var cy = cytoscape({
+                elements: {
+                    nodes: [
+                        {data: {id: 'j', name: 'Jerry'}},
+                        {data: {id: 'e', name: 'Elaine'}},
+                        {data: {id: 'k', name: 'Kramer'}},
+                        {data: {id: 'g', name: 'George'}},
+                        {data: {id: 'a', name: 'Pedro'}},
+                        {data: {id: 'b', name: 'Brunno'}},
+                        {data: {id: 'c', name: 'Jali'}}
+                    ],
+                    edges: [
+                        {data: {source: 'j', target: 'e'}},{data: {source: 'j', target: 'c'}},
+                        {data: {source: 'j', target: 'k'}},
+                        {data: {source: 'j', target: 'g'}},
+                        {data: {source: 'e', target: 'j'}},
+                        {data: {source: 'e', target: 'k'}},{data: {source: 'e', target: 'c'}},
+                        {data: {source: 'e', target: 'g'}},
+                        {data: {source: 'k', target: 'j'}},
+                        {data: {source: 'k', target: 'e'}},{data: {source: 'k', target: 'c'}},
+                        {data: {source: 'k', target: 'g'}},
+                        {data: {source: 'g', target: 'k'}},
+                        {data: {source: 'g', target: 'j'}},
+                        {data: {source: 'g', target: 'e'}},{data: {source: 'g', target: 'c'}},
+                        {data: {source: 'g', target: 'a'}},
+                        {data: {source: 'g', target: 'b'}},
+                        {data: {source: 'a', target: 'g'}},
+                        {data: {source: 'b', target: 'g'}},
+                        {data: {source: 'c', target: 'j'}},
+                        {data: {source: 'c', target: 'e'}},
+                        {data: {source: 'c', target: 'k'}},
+                        {data: {source: 'c', target: 'g'}}
+                    ]
+                },
+                style: [
+                    {
+                        "selector": "core",
+                        "style": {
+                            "selection-box-color": "#AAD8FF",
+                            "selection-box-border-color": "#8BB0D0",
+                            "selection-box-opacity": "0.5"
+                        }
+                    },
+                    {
+                        "selector": "node",
+                        "style": {
+                            "width": "mapData(score, 0, 0.006769776522008331, 20, 60)",
+                            "height": "mapData(score, 0, 0.006769776522008331, 20, 60)",
+                            "content": "data(id)",
+                            "font-size": "12px",
+                            "text-valign": "center",
+                            "text-halign": "center",
+                            "background-color": "#555",
+                            "text-outline-color": "#555",
+                            "text-outline-width": "2px",
+                            "color": "#fff",
+                            "overlay-padding": "6px",
+                            "z-index": "10"
+                        }
+                    }
+                ],
+                container: $('#cy')
+            }
+    );
+
+    var colors = [2, 6, 9, 15, 20];
+    var realColors = ['red', 'blue', 'green', 'yellow', 'purple'];
+    var t = [0, 1, 3];
+    var minColor = colors[0];
+    var maxColor = 0;
+
+    /**
+     * Verifica se ainda há algum vértice não colorido
+     */
+    function hasUncoloredNode() {
+        for(var i =0; i < cy.nodes.length;i++){
+            if(!cy.nodes[i].color){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Acha os nós adjacentes de um vértice
+     */
+    function getAdjNodes(n) {
+        var adj = 0;
+        n.connectedEdges().targets().forEach(function (nt) {
+            if(nt.id() != n.id()){
+                adj += adj + 1;
+            }
+        });
+        return adj;
+    }
+
+    /**
+     * Acho o grau de saturação de um vértice
+     */
+    function getNodeSaturation(n){
+        var sumColor = 0;
+        n.connectedEdges().targets().forEach(function (nt) {
+            if(nt.id() != n.id()){
+                if(nt.color){
+                    sumColor += 1;
+                }
+            }
+        });
+        return sumColor;
+    }
+
+    /**
+     * Acha o nó mais saturado não colorido
+     */
+    function maxSatNodeNotColored(){
+        var nodes = cy.nodes.sort(function (n1, n2) {
+            return getNodeSaturation(n2) - getNodeSaturation(n1);
+        });
+        for(var i = 0;i < nodes.length;i++){
+            if(!nodes[i].color){
+                return nodes[i];
+            }
+        }
+        return nodes[0];
+    }
+
+    /**
+     * Atribui a um nó uma cor mínima disponível
+     * respeitando as restrições de T
+     */
+    function minAvailableColor(n){
+        var color = false;
+        var realColor = 'gray';
+        var neighbourhoodColors = [];
+        console.log("Começando a ver a cor do nó "+n.id());
+        n.connectedEdges().targets().forEach(function (nt) {
+            if(nt.id() != n.id()){
+                if(nt.color){
+                    neighbourhoodColors.push(nt.color);
+                }
+            }
+        });
+
+        neighbourhoodColors.sort(function (a, b) {
+            return a - b;
+        });
+
+        for(var i = 0;i < colors.length;i++){
+            if(isInArray(colors[i], neighbourhoodColors)){
+                console.log("Cor "+colors[i]+" está na vizinhança");
+                continue;
+            }
+            for(var j = 0;j < neighbourhoodColors.length;i++){
+                if(!isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)){
+                    color = colors[i];
+                    realColor = realColors[i];
+                    break;
+                }
+            }
+            if(color){
+                break;
+            }
+        }
+        console.log("Node "+n.id()+" recebeu a cor "+color);
+        cy.$('#'+n.id()).css('background-color', realColor);
+        n.color = color ? color : null;
+        if(color){
+            increaseNeighBourhoodSaturation(n);
+        }else{
+            cy.$('#'+n.id()).css('background-color', 'black');
+            console.log("Não há cores suficientes para colorir esse grafo.");
+        }
+    }
+
+    /**
+     * Aumenta a saturação dos vizinhos de um nó
+     */
+    function increaseNeighBourhoodSaturation(n){
+        n.connectedEdges().targets().forEach(function (nt) {
+            if(nt.id() != n.id()){
+                nt.saturation += 1;
+                console.log("Aumentando a saturação de "+nt.id()+" para "+nt.saturation);
+            }
+        });
+    }
+
+    /**
+     * Função de utilidade para ver se há um elemento em um array
+     */
+    function isInArray(value, array) {
+        return array.indexOf(value) > -1;
+    }
+
+    /**
+     * Função de utilidade para fazer as coisas mais devagar
+     */
+    function sleep(miliseconds) {
+        var currentTime = new Date().getTime();
+        while (currentTime + miliseconds >= new Date().getTime()) {
+        }
+    }
+
+    /**
+     * Executa o algoritmo quando todo o documento é carregado
+     */
+    $(document).ready(function () {
+        //Ordena os vértices em ordem decrescente de grau
+        cy.nodes = cy.nodes('*').sort(function (n1, n2) {
+            return getAdjNodes(n2) - getAdjNodes(n1);
+        });
+        //Inicializa os vértices com algumas informações iniciais
+        cy.nodes.forEach(function (n) {
+            n.name = n.id();
+            n.saturation = 0;
+        });
+
+        //Começo do algoritmo
+        var t0 = performance.now();
+        //Atribui uma cor inicial ao vértice de maior grau
+        cy.nodes[0].color = colors[0];
+        cy.$('#'+cy.nodes[0].id()).css('background-color', realColors[0]);
+        console.log("Node "+cy.nodes[0].id()+" recebeu a cor "+colors[0]);
+
+        //Atualiza o grau de seus vizinhos
+        increaseNeighBourhoodSaturation(cy.nodes[0]);
+
+        console.log("-------------------");
+
+        //Enquanto todos os nós não são coloridos continua colorindo
+        while(hasUncoloredNode()){
+            //Pega o nó com maior grau de saturação não colorido
+            var nnode = maxSatNodeNotColored();
+            //Acha a menor cor possível para ele
+            minAvailableColor(nnode);
+            //Se o nó não pode ser colorido dá uma mensagem e sai do laço
+            if(!nnode.color){
+                break;
+            }
+//            sleep(500);
+            console.log("-------------------");
+        }
+        var t1 = performance.now();
+        console.log("Algoritmo demorou " + (t1 - t0) + " milliseconds.")
+        //Fim do algoritmo
+    });
+</script>
+</body>
+</html>
