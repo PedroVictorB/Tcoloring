@@ -21,32 +21,35 @@
     }
 </style>
 <body>
+<div>
+    <input type="file" name="file" id="file">
+</div>
 <div id="cy"></div>
 <script>
     var cy = cytoscape({
                 elements: {
                     nodes: [
-                        {data: {id: 'j', name: 'Jerry'}},
-                        {data: {id: 'e', name: 'Elaine'}},
-                        {data: {id: 'k', name: 'Kramer'}},
-                        {data: {id: 'g', name: 'George'}},
-                        {data: {id: 'a', name: 'Pedro'}},
-                        {data: {id: 'b', name: 'Brunno'}},
-                        {data: {id: 'c', name: 'Jali'}}
+                        {data: {id: 'j'}},
+                        {data: {id: 'e'}},
+                        {data: {id: 'k'}},
+                        {data: {id: 'g'}},
+                        {data: {id: 'a'}},
+                        {data: {id: 'b'}},
+                        {data: {id: 'c'}}
                     ],
                     edges: [
-                        {data: {source: 'j', target: 'e'}},{data: {source: 'j', target: 'c'}},
+                        {data: {source: 'j', target: 'e'}}, {data: {source: 'j', target: 'c'}},
                         {data: {source: 'j', target: 'k'}},
                         {data: {source: 'j', target: 'g'}},
                         {data: {source: 'e', target: 'j'}},
-                        {data: {source: 'e', target: 'k'}},{data: {source: 'e', target: 'c'}},
+                        {data: {source: 'e', target: 'k'}}, {data: {source: 'e', target: 'c'}},
                         {data: {source: 'e', target: 'g'}},
                         {data: {source: 'k', target: 'j'}},
-                        {data: {source: 'k', target: 'e'}},{data: {source: 'k', target: 'c'}},
+                        {data: {source: 'k', target: 'e'}}, {data: {source: 'k', target: 'c'}},
                         {data: {source: 'k', target: 'g'}},
                         {data: {source: 'g', target: 'k'}},
                         {data: {source: 'g', target: 'j'}},
-                        {data: {source: 'g', target: 'e'}},{data: {source: 'g', target: 'c'}},
+                        {data: {source: 'g', target: 'e'}}, {data: {source: 'g', target: 'c'}},
                         {data: {source: 'g', target: 'a'}},
                         {data: {source: 'g', target: 'b'}},
                         {data: {source: 'a', target: 'g'}},
@@ -88,6 +91,135 @@
             }
     );
 
+    document.getElementById('file').onchange = function () {
+
+        var file = this.files[0];
+
+        var reader = new FileReader();
+        reader.onload = function (progressEvent) {
+            cy.remove('*');
+            var nodes = 0;
+            var edges = 0;
+
+            // By lines
+            var lines = this.result.split('\n');
+            var temp = [];
+            var demoNodes = [];
+            var demoEdges = [];
+            for (var line = 0; line < lines.length; line++) {
+                if (line == 0) {
+                    temp = lines[line].split(" ");
+                    nodes = temp[0];
+                    edges = temp[1];
+                    for (var i = 1; i <= nodes; i++) {
+                        demoNodes.push({
+
+                            data: {
+                                id: i
+                            }
+                        });
+
+//                        cy.add([
+//                            {group: "nodes", data: {id: i }}
+//                        ])
+                    }
+                } else {
+                    temp = lines[line].split(" ");
+
+                    demoEdges.push({
+                        group: "edges",
+                        data: {
+                            source: temp[1],
+                            target: temp[2]
+                        }
+                    });
+                    if (line == 200) {
+                        break;
+                    }
+
+//                    demoEdges.push({
+//                        data: {
+//                            source: temp[2],
+//                            target: temp[1]
+//                        }
+//                    });
+                }
+            }
+//            console.log(demoNodes);
+//            console.log(demoEdges);
+
+            cy = cytoscape({
+                        elements: {
+                            nodes: demoNodes
+//                            edges: demoEdges
+                        },
+                        style: [
+                            {
+                                "selector": "core",
+                                "style": {
+                                    "selection-box-color": "#AAD8FF",
+                                    "selection-box-border-color": "#8BB0D0",
+                                    "selection-box-opacity": "0.5"
+                                }
+                            },
+                            {
+                                "selector": "node",
+                                "style": {
+                                    "width": "mapData(score, 0, 0.006769776522008331, 20, 60)",
+                                    "height": "mapData(score, 0, 0.006769776522008331, 20, 60)",
+                                    "content": "data(id)",
+                                    "font-size": "12px",
+                                    "text-valign": "center",
+                                    "text-halign": "center",
+                                    "background-color": "#555",
+                                    "text-outline-color": "#555",
+                                    "text-outline-width": "2px",
+                                    "color": "#fff",
+                                    "overlay-padding": "6px",
+                                    "z-index": "10"
+                                }
+                            }
+                        ],
+                        container: $('#cy')
+                    }
+            );
+            demoEdges.forEach(function (obj) {
+                console.log(obj);
+                cy.add([
+                    {group: "edges", data: {source: obj.data.source, target: obj.data.target}}
+                ]);
+            });
+
+//            for (line = 0; line < lines.length; line++) {
+//                if (line == 0) {
+//                } else {
+//                    temp = lines[line].split(" ");
+//                    console.log("de "+temp[1]+" para "+temp[2]);
+//                    cy.add([
+//                        { group: "edges", data: { source: temp[1], target: temp[2]}},
+//                        { group: "edges", data: { source: temp[2], target: temp[1]}}
+//                    ]);
+//                    if(line == 200){
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            cy.add([
+//                { group: "edges", data: { source: 1, target: 2}},
+//                { group: "edges", data: { source: 2, target: 1}}
+//            ]);
+//            cy.add([
+//                { group: "edges", data: { source: 2, target: 3}},
+//                { group: "edges", data: { source: 3, target: 2}}
+//            ]);
+//            cy.add(demoEdges);
+
+
+        };
+        reader.readAsText(file);
+    };
+
     var colors = [2, 6, 9, 15, 20];
     var realColors = ['red', 'blue', 'green', 'yellow', 'purple'];
     var t = [0, 1, 3];
@@ -98,8 +230,8 @@
      * Verifica se ainda há algum vértice não colorido
      */
     function hasUncoloredNode() {
-        for(var i =0; i < cy.nodes.length;i++){
-            if(!cy.nodes[i].color){
+        for (var i = 0; i < cy.nodes.length; i++) {
+            if (!cy.nodes[i].color) {
                 return true;
             }
         }
@@ -112,7 +244,7 @@
     function getAdjNodes(n) {
         var adj = 0;
         n.connectedEdges().targets().forEach(function (nt) {
-            if(nt.id() != n.id()){
+            if (nt.id() != n.id()) {
                 adj += adj + 1;
             }
         });
@@ -122,11 +254,11 @@
     /**
      * Acho o grau de saturação de um vértice
      */
-    function getNodeSaturation(n){
+    function getNodeSaturation(n) {
         var sumColor = 0;
         n.connectedEdges().targets().forEach(function (nt) {
-            if(nt.id() != n.id()){
-                if(nt.color){
+            if (nt.id() != n.id()) {
+                if (nt.color) {
                     sumColor += 1;
                 }
             }
@@ -137,12 +269,12 @@
     /**
      * Acha o nó mais saturado não colorido
      */
-    function maxSatNodeNotColored(){
+    function maxSatNodeNotColored() {
         var nodes = cy.nodes.sort(function (n1, n2) {
             return getNodeSaturation(n2) - getNodeSaturation(n1);
         });
-        for(var i = 0;i < nodes.length;i++){
-            if(!nodes[i].color){
+        for (var i = 0; i < nodes.length; i++) {
+            if (!nodes[i].color) {
                 return nodes[i];
             }
         }
@@ -153,14 +285,14 @@
      * Atribui a um nó uma cor mínima disponível
      * respeitando as restrições de T
      */
-    function minAvailableColor(n){
+    function minAvailableColor(n) {
         var color = false;
         var realColor = 'gray';
         var neighbourhoodColors = [];
-        console.log("Começando a ver a cor do nó "+n.id());
+        console.log("Começando a ver a cor do nó " + n.id());
         n.connectedEdges().targets().forEach(function (nt) {
-            if(nt.id() != n.id()){
-                if(nt.color){
+            if (nt.id() != n.id()) {
+                if (nt.color) {
                     neighbourhoodColors.push(nt.color);
                 }
             }
@@ -170,29 +302,29 @@
             return a - b;
         });
 
-        for(var i = 0;i < colors.length;i++){
-            if(isInArray(colors[i], neighbourhoodColors)){
-                console.log("Cor "+colors[i]+" está na vizinhança");
+        for (var i = 0; i < colors.length; i++) {
+            if (isInArray(colors[i], neighbourhoodColors)) {
+                console.log("Cor " + colors[i] + " está na vizinhança");
                 continue;
             }
-            for(var j = 0;j < neighbourhoodColors.length;i++){
-                if(!isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)){
+            for (var j = 0; j < neighbourhoodColors.length; i++) {
+                if (!isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)) {
                     color = colors[i];
                     realColor = realColors[i];
                     break;
                 }
             }
-            if(color){
+            if (color) {
                 break;
             }
         }
-        console.log("Node "+n.id()+" recebeu a cor "+color);
-        cy.$('#'+n.id()).css('background-color', realColor);
+        console.log("Node " + n.id() + " recebeu a cor " + color);
+        cy.$('#' + n.id()).css('background-color', realColor);
         n.color = color ? color : null;
-        if(color){
+        if (color) {
             increaseNeighBourhoodSaturation(n);
-        }else{
-            cy.$('#'+n.id()).css('background-color', 'black');
+        } else {
+            cy.$('#' + n.id()).css('background-color', 'black');
             console.log("Não há cores suficientes para colorir esse grafo.");
         }
     }
@@ -200,11 +332,11 @@
     /**
      * Aumenta a saturação dos vizinhos de um nó
      */
-    function increaseNeighBourhoodSaturation(n){
+    function increaseNeighBourhoodSaturation(n) {
         n.connectedEdges().targets().forEach(function (nt) {
-            if(nt.id() != n.id()){
+            if (nt.id() != n.id()) {
                 nt.saturation += 1;
-                console.log("Aumentando a saturação de "+nt.id()+" para "+nt.saturation);
+                console.log("Aumentando a saturação de " + nt.id() + " para " + nt.saturation);
             }
         });
     }
@@ -243,8 +375,8 @@
         var t0 = performance.now();
         //Atribui uma cor inicial ao vértice de maior grau
         cy.nodes[0].color = colors[0];
-        cy.$('#'+cy.nodes[0].id()).css('background-color', realColors[0]);
-        console.log("Node "+cy.nodes[0].id()+" recebeu a cor "+colors[0]);
+        cy.$('#' + cy.nodes[0].id()).css('background-color', realColors[0]);
+        console.log("Node " + cy.nodes[0].id() + " recebeu a cor " + colors[0]);
 
         //Atualiza o grau de seus vizinhos
         increaseNeighBourhoodSaturation(cy.nodes[0]);
@@ -252,13 +384,13 @@
         console.log("-------------------");
 
         //Enquanto todos os nós não são coloridos continua colorindo
-        while(hasUncoloredNode()){
+        while (hasUncoloredNode()) {
             //Pega o nó com maior grau de saturação não colorido
             var nnode = maxSatNodeNotColored();
             //Acha a menor cor possível para ele
             minAvailableColor(nnode);
             //Se o nó não pode ser colorido dá uma mensagem e sai do laço
-            if(!nnode.color){
+            if (!nnode.color) {
                 break;
             }
 //            sleep(500);
