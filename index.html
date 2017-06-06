@@ -100,7 +100,7 @@
             cy.remove('*');
             var nodes = 0;
             var edges = 0;
-
+            usedColors = [];
             // By lines
             var lines = this.result.split('\n');
             var temp = [];
@@ -109,13 +109,27 @@
             for (var line = 0; line < lines.length; line++) {
                 if (line == 0) {
                     temp = lines[line].split(" ");
+                    colors = [];
+                    for (var i = 0; i <= temp.length; i++) {
+                        colors.push(temp[i]);
+                    }
+                }
+                if (line == 1) {
+                    temp = lines[line].split(" ");
+                    t = [];
+                    for (var i = 0; i <= temp.length; i++) {
+                        t.push(temp[i]);
+                    }
+                }
+                if (line == 2) {
+                    temp = lines[line].split(" ");
                     nodes = temp[0];
                     edges = temp[1];
                     for (var i = 1; i <= nodes; i++) {
                         demoNodes.push({
 
                             data: {
-                                id: i
+                                id: parseInt(i)
                             }
                         });
                     }
@@ -179,7 +193,7 @@
                                 "style": {
                                     'curve-style': 'haystack',
                                     'haystack-radius': 0,
-                                    'width': 5,
+                                    'width': 2,
                                     'opacity': 0.5,
                                     'line-color': '#a8eae5'
                                 }
@@ -188,15 +202,55 @@
                         container: $('#cy')
                     }
             );
+
+            //Ordena os vértices em ordem decrescente de grau
+            cy.nodes = cy.nodes('*').sort(function (n1, n2) {
+                return getAdjNodes(n2) - getAdjNodes(n1);
+            });
+            //Inicializa os vértices com algumas informações iniciais
+            cy.nodes.forEach(function (n) {
+                n.name = n.id();
+                n.saturation = 0;
+            });
+
+            //Começo do algoritmo
+            var t0 = performance.now();
+            //Atribui uma cor inicial ao vértice de maior grau
+            cy.nodes[0].color = colors[0];
+            cy.$('#' + cy.nodes[0].id()).css('background-color', realColors[0]);
+            console.log("Node " + cy.nodes[0].id() + " recebeu a cor " + colors[0]);
+
+            //Atualiza o grau de seus vizinhos
+            increaseNeighBourhoodSaturation(cy.nodes[0]);
+            usedColors.push(colors[0]);
+            console.log("-------------------");
+
+            //Enquanto todos os nós não são coloridos continua colorindo
+            while (hasUncoloredNode()) {
+                //Pega o nó com maior grau de saturação não colorido
+                var nnode = maxSatNodeNotColored();
+                //Acha a menor cor possível para ele
+                minAvailableColor(nnode);
+                //Se o nó não pode ser colorido dá uma mensagem e sai do laço
+                if (!nnode.color) {
+                    break;
+                }
+//            sleep(500);
+                console.log("-------------------");
+            }
+            var t1 = performance.now();
+            console.log("Algoritmo demorou " + (t1 - t0) + " milliseconds.");
+            console.log("Quantidade de cores usadas: "+usedColors.length);
         };
         reader.readAsText(file);
     };
 
-    var colors = [2, 6, 9, 15, 20];
-    var realColors = ['red', 'blue', 'green', 'yellow', 'purple'];
-    var t = [0, 1, 3];
+    var colors = [1, 2, 9, 11, 20, 22, 25, 30, 35, 36, 44, 55, 60];
+    var realColors = ['red', 'blue', 'green', 'yellow', 'purple', 'aqua', 'brown', 'orange', 'pink', 'lawngreen', 'chartreuse', 'gold', 'cyan'];
+    var t = [0, 1, 2, 3, 4, 5 , 6];
     var minColor = colors[0];
     var maxColor = 0;
+    var usedColors = [];
 
     /**
      * Verifica se ainda há algum vértice não colorido
@@ -279,16 +333,28 @@
                 console.log("Cor " + colors[i] + " está na vizinhança");
                 continue;
             }
-            for (var j = 0; j < neighbourhoodColors.length; i++) {
-                if (!isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)) {
+            for (var j = 0; j < neighbourhoodColors.length; j++) {
+                if (isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)) {
+                    console.log("Cor " + colors[i] + " não pode ser colocada devido a restrição de T");
+                    break;
+                }
+                if(!isInArray(Math.abs(neighbourhoodColors[j] - colors[i]), t)){
                     color = colors[i];
-                    realColor = realColors[i];
+                    if(realColors[i]){
+                        realColor = realColors[i];
+                    }else{
+                        realColor = "gray"
+                    }
+
                     break;
                 }
             }
             if (color) {
                 break;
             }
+        }
+        if(!isInArray(color, usedColors)){
+            usedColors.push(color);
         }
         console.log("Node " + n.id() + " recebeu a cor " + color);
         cy.$('#' + n.id()).css('background-color', realColor);
@@ -349,7 +415,7 @@
         cy.nodes[0].color = colors[0];
         cy.$('#' + cy.nodes[0].id()).css('background-color', realColors[0]);
         console.log("Node " + cy.nodes[0].id() + " recebeu a cor " + colors[0]);
-
+        usedColors.push(colors[0]);
         //Atualiza o grau de seus vizinhos
         increaseNeighBourhoodSaturation(cy.nodes[0]);
 
@@ -369,7 +435,8 @@
             console.log("-------------------");
         }
         var t1 = performance.now();
-        console.log("Algoritmo demorou " + (t1 - t0) + " milliseconds.")
+        console.log("Algoritmo demorou " + (t1 - t0) + " milliseconds.");
+        console.log("Quantidade de cores usadas: "+usedColors.length);
         //Fim do algoritmo
     });
 </script>
